@@ -152,6 +152,7 @@ let markTimer = null, pendingMarks = null;
 function upMarks(f){ pendingMarks = f; apply({ t:'up', id:me, f }); sync(); clearTimeout(markTimer);
   markTimer = setTimeout(() => { const f2 = pendingMarks; pendingMarks = null; outbox.push({ t:'up', id:me, f:f2 }); pump(); }, 1200); }
 const mine = () => players.find(p => p.id === me);
+const stillWriting = () => players.filter(p => (p.things||[]).length < 5);
 
 /* ---------- start: load history, then listen live ---------- */
 $('#app').innerHTML = `<h1>Friends <span>Bingo</span></h1><p class="muted" id="loading">Loading the game…</p>`;
@@ -298,6 +299,7 @@ function renderGenerate(){
       <button class="btn" id="gen">🎲 Generate my board</button></div>`);
   $('#edit').onclick = () => { editing = true; refresh(); };
   $('#gen').onclick = () => {
+    if(stillWriting().length) return;
     const board = deal(m.name);
     if(board.length < 9) return;
     $('#gen').disabled = true;
@@ -338,11 +340,13 @@ function updateMain(){
     });
   }
   if(stage === 'generate'){
-    const n = poolFor(m.name).length;
-    $('#poolmsg').innerHTML = n >= 9
-      ? `${n} things to pick from (none about you).`
-      : `Waiting for more people: need 9 things that aren't about you, there are ${n} so far. This updates by itself.`;
-    $('#gen').disabled = n < 9; $('#gen').style.opacity = n < 9 ? .5 : 1;
+    const n = poolFor(m.name).length, waiting = stillWriting();
+    const ok = n >= 9 && !waiting.length;
+    $('#poolmsg').innerHTML = waiting.length
+      ? `Boards unlock once everyone has written their 5 things. Still waiting for: <b>${waiting.map(p=>esc(p.name)).join(', ')}</b>. This updates by itself.`
+      : n >= 9 ? `Everyone's done! ${n} things to pick from (none about you).`
+      : `Need 9 things that aren't about you, there are ${n} so far.`;
+    $('#gen').disabled = !ok; $('#gen').style.opacity = ok ? 1 : .5;
   }
   if(stage === 'board'){
     const marks = new Set(localMarks || m.marks || []);
@@ -381,9 +385,25 @@ function renderSide(){
 
 /* ---------- host tools (owner only) ---------- */
 let hostOpen = false;
+function renderHostPlayers(){
+  const hp = $('#hostPlayers'); if(!hp) return;
+  const sorted = players.slice().sort((a,b)=>(a.at||0)-(b.at||0));
+  const html = `<h3 style="margin-top:18px">Players</h3><ul class="plist">${sorted.map(p=>`<li><span>${esc(p.name)} <span class="muted">· ${status(p)}</span></span>
+    <span style="display:flex;gap:6px;flex:0 0 auto">${Array.isArray(p.board)?`<button class="btn small ghost" data-redo="${esc(p.id)}">Redo board</button>`:''}
+    <button class="btn small danger" data-remove="${esc(p.id)}">Remove</button></span></li>`).join('')}</ul>`;
+  if(hp.dataset.last === html) return;
+  hp.dataset.last = html; hp.innerHTML = html;
+  hp.querySelectorAll('[data-redo]').forEach(b => b.onclick = () => armed(b, 'Sure?', () => { up(b.dataset.redo, { board:null, marks:[], bingoAt:null }); toast('Board cleared, they can generate a new one'); }));
+  hp.querySelectorAll('[data-remove]').forEach(b => b.onclick = () => armed(b, 'Sure?', () => { up(b.dataset.remove, { name:'' }); toast('Removed'); }));
+}
+function armed(b, label, fn){
+  if(b.dataset.armed){ fn(); return; }
+  const old = b.textContent; b.dataset.armed = '1'; b.textContent = label;
+  setTimeout(() => { if(b.isConnected){ delete b.dataset.armed; b.textContent = old; } }, 3000);
+}
 function renderHost(){
   const h = $('#host'); if(!h) return;
-  if(h.dataset.built){ return; }
+  if(h.dataset.built){ renderHostPlayers(); return; }
   h.dataset.built = '1';
   h.innerHTML = `<div class="card"><h3>Host tools</h3>
     <p class="muted">Only you see this.</p>
@@ -395,6 +415,7 @@ function renderHost(){
       <button class="btn" id="gSave">Add friend</button><div id="gMsg"></div>
     </div>
     <button class="btn ghost" id="guestBoards">Copy boards for friends added here</button>
+    <div id="hostPlayers"></div>
     <button class="btn danger" id="reset" style="margin-top:18px">Reset the whole game</button></div>`;
   $('#addGuest').onclick = () => $('#guestForm').classList.toggle('hidden');
   $('#gSave').onclick = () => {
@@ -409,6 +430,7 @@ function renderHost(){
   $('#guestBoards').onclick = async () => {
     const guests = players.filter(p => p.guest);
     if(!guests.length){ toast('No friends added here yet'); return; }
+    if(stillWriting().length){ toast('Wait until everyone has written their 5 things'); return; }
     for(const g of guests){
       if(!Array.isArray(g.board)){
         const board = deal(g.name);
@@ -425,6 +447,7 @@ function renderHost(){
     send({ t:'reset' });
     toast('Game reset');
   };
+  renderHostPlayers();
 }
 
 /* ---------- confetti ---------- */
