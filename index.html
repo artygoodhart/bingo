@@ -278,6 +278,7 @@ function saveThings(){
 function poolFor(name){
   const seen = new Set(), out = [];
   players.forEach(p => (p.things||[]).forEach(t => {
+    if(lc(p.name) === lc(name)) return;         // nothing you wrote yourself
     if(lc(t.who) === lc(name)) return;          // nothing about you on your board
     const s = thingText(t), k = lc(s);
     if(!seen.has(k)){ seen.add(k); out.push(s); }
