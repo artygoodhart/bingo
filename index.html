@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Friends Bingo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#16131f; --panel:#221d30; --panel2:#2c2640; --ink:#f6f1ff; --muted:#a79fbd;
+    --accent:#ffcf3f; --accent-ink:#2a2100; --pink:#ff5d8f; --green:#3ee08f; --line:#3a3352;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+  body{min-height:100vh}
+  .wrap{max-width:520px;margin:0 auto;padding:20px 16px 60px}
+  h1,h2,h3{font-family:"Bricolage Grotesque",Inter,sans-serif;margin:0}
+  h1{font-size:34px;font-weight:800;letter-spacing:-.5px}
+  h1 span{color:var(--accent)}
+  h2{font-size:22px;font-weight:700;margin-bottom:6px}
+  h3{font-size:16px;font-weight:700}
+  p{line-height:1.45;margin:6px 0}
+  .muted{color:var(--muted);font-size:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin:14px 0}
+  .btn{appearance:none;border:0;border-radius:14px;padding:14px 16px;font:600 16px Inter,sans-serif;cursor:pointer;width:100%;
+       background:var(--accent);color:var(--accent-ink);margin-top:10px;transition:transform .08s}
+  .btn:active{transform:scale(.98)}
+  .btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+  .btn.small{width:auto;padding:9px 12px;font-size:14px;margin-top:0}
+  .btn.danger{background:transparent;color:var(--pink);border:1px solid #5a2b40}
+  .row{display:flex;gap:8px;align-items:center}
+  .row > *{flex:1}
+  input[type=text],textarea{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:12px;
+       padding:12px;font:16px Inter,sans-serif;margin-top:8px}
+  textarea{min-height:90px;resize:vertical;font-size:14px}
+  input:focus,textarea:focus{outline:2px solid var(--accent);border-color:transparent}
+  label.check{display:flex;gap:10px;align-items:flex-start;margin-top:10px;font-size:15px}
+  label.check input{width:20px;height:20px;accent-color:var(--accent);margin-top:1px}
+  .home-btn{display:block;text-align:left;padding:18px}
+  .home-btn b{display:block;font-size:18px;font-family:"Bricolage Grotesque",sans-serif}
+  .home-btn small{display:block;font-weight:400;opacity:.8;margin-top:3px;font-size:14px}
+  .back{background:none;border:0;color:var(--muted);font:500 15px Inter;padding:0;margin-bottom:10px;cursor:pointer}
+  .pill{display:inline-block;background:var(--panel2);border-radius:999px;padding:4px 10px;font-size:13px;color:var(--muted)}
+  .player-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .player-head input{margin-top:0;font-weight:600}
+  .x{background:none;border:0;color:var(--muted);font-size:22px;cursor:pointer;padding:4px 8px;flex:0 0 auto}
+  .err{color:var(--pink);font-size:14px;margin-top:8px}
+  .ok{color:var(--green);font-size:14px;margin-top:8px}
+  .codebox{font:12px ui-monospace,Menlo,monospace;word-break:break-all;background:var(--bg);border:1px dashed var(--line);
+       border-radius:10px;padding:10px;margin-top:8px;color:var(--muted);max-height:90px;overflow:auto;user-select:all;-webkit-user-select:all}
+  /* Grid */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+  .cell{aspect-ratio:1/1;background:var(--panel2);border:2px solid var(--line);border-radius:14px;display:flex;align-items:center;justify-content:center;
+        text-align:center;padding:6px;font:600 clamp(11px,3.4vw,15px)/1.2 Inter,sans-serif;cursor:pointer;position:relative;overflow:hidden;
+        transition:background .15s,border-color .15s,transform .1s;user-select:none;-webkit-user-select:none;word-break:break-word;hyphens:auto}
+  .cell:active{transform:scale(.96)}
+  .cell.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  .cell.on::after{content:"✓";position:absolute;top:4px;right:7px;font-size:13px;opacity:.7}
+  .cell.win{background:var(--green);border-color:var(--green);color:#03240f}
+  .mini{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:10px}
+  .mini div{background:var(--panel2);border-radius:8px;padding:6px;font-size:11px;line-height:1.2;min-height:44px;color:var(--muted)}
+  .banner{display:none;text-align:center;background:linear-gradient(135deg,var(--accent),var(--pink));color:#1d1300;border-radius:18px;padding:18px;margin-top:14px}
+  .banner.show{display:block;animation:pop .35s ease}
+  .banner h2{font-size:34px;margin:0}
+  @keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(30px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;
+         font-weight:600;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .count{font-family:"Bricolage Grotesque";font-size:15px}
+  .steps{counter-reset:s;padding-left:0;list-style:none;margin:8px 0 0}
+  .steps li{counter-increment:s;position:relative;padding-left:32px;margin:10px 0;font-size:15px;line-height:1.4}
+  .steps li::before{content:counter(s);position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
+         font:700 13px/22px Inter;text-align:center}
+  .hidden{display:none !important}
+  canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:8}
+  .names{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+  .names .btn{margin-top:0}
+  select{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:12px;font:16px Inter,sans-serif;-webkit-appearance:none;appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat}
+  .thing{background:var(--panel2);border-radius:14px;padding:10px;margin-top:10px}
+  .thing .lbl{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .thing input{margin-top:6px}
+  .thing select{margin-top:6px}
+  .plist{list-style:none;padding:0;margin:8px 0 0}
+  .plist li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line);font-size:15px}
+  .plist li:first-child{border-top:0}
+  .plist .st{color:var(--muted);font-size:13px;text-align:right}
+  .winner{background:linear-gradient(135deg,var(--accent),var(--pink));color:#1d1300;border-radius:14px;padding:12px 14px;font-weight:700;margin-top:12px;text-align:center}
+  .summary{margin:8px 0 0;padding-left:18px}
+  .summary li{margin:4px 0}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="wrap" id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
+async function copy(text){ try{ await navigator.clipboard.writeText(text); toast('Copied'); }catch(e){ toast("Couldn't copy, screenshot it instead"); } }
+const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,4,8],[2,4,6]];
+const SOMEONE = 'Someone', OTHER = '__other__';
+const lc = s => String(s||'').trim().toLowerCase();
+const thingText = t => (t.who ? t.who + ' ' : '') + t.what;
+const hasBingo = p => Array.isArray(p.board) && LINES.some(l => l.every(k => (p.marks||[]).includes(k)));
+
+let me=null, isOwner=false, players=[], stage=null, editing=false, loaded=false, readOnly=false;
+
+/* ---------- shared game state, synced through ntfy.sh (no accounts) ---------- */
+const RELAY = 'https://ntfy.sh', TOPIC = 'friends-bingo-de6afa34653b157d';
+const byId = {};                       // id -> player
+let lastMsgId = null;
+isOwner = location.hash === '#host';
+try{ me = localStorage.getItem('fb_me'); }catch(e){}
+if(!me){ me = 'p-' + Math.random().toString(36).slice(2,10); try{ localStorage.setItem('fb_me', me); }catch(e){} }
+
+function apply(ev){
+  if(!ev || typeof ev !== 'object') return;
+  if(ev.t === 'reset'){ for(const k in byId) delete byId[k]; return; }
+  if(ev.t === 'up' && typeof ev.id === 'string' && ev.f && typeof ev.f === 'object'){
+    byId[ev.id] = Object.assign(byId[ev.id] || { id:ev.id }, ev.f);
+  }
+}
+function sync(){ players = Object.values(byId).filter(p => p.name); refresh(); }
+function onRaw(m){
+  if(!m || m.event !== 'message') return;
+  lastMsgId = m.id;
+  try{ apply(JSON.parse(m.message)); }catch(e){}
+}
+
+/* outgoing: queued, retried on rate limits, marks coalesced */
+const outbox = []; let sending = false;
+async function pump(){
+  if(sending) return; sending = true;
+  while(outbox.length){
+    const ev = outbox[0];
+    try{
+      const r = await fetch(RELAY + '/' + TOPIC, { method:'POST', body: JSON.stringify(ev) });
+      if(r.status === 429){ toast('Busy, retrying…'); await new Promise(r=>setTimeout(r, 6000)); continue; }
+      if(!r.ok) throw new Error(r.status);
+      outbox.shift();
+    }catch(e){ toast('Connection problem, retrying…'); await new Promise(r=>setTimeout(r, 4000)); }
+  }
+  sending = false;
+}
+function send(ev){ apply(ev); sync(); outbox.push(ev); pump(); }
+function up(id, f){ send({ t:'up', id, f }); }
+let markTimer = null, pendingMarks = null;
+function upMarks(f){ pendingMarks = f; apply({ t:'up', id:me, f }); sync(); clearTimeout(markTimer);
+  markTimer = setTimeout(() => { const f2 = pendingMarks; pendingMarks = null; outbox.push({ t:'up', id:me, f:f2 }); pump(); }, 1200); }
+const mine = () => players.find(p => p.id === me);
+
+/* ---------- start: load history, then listen live ---------- */
+$('#app').innerHTML = `<h1>Friends <span>Bingo</span></h1><p class="muted" id="loading">Loading the game…</p>`;
+(async () => {
+  const timer = setTimeout(() => { const l=$('#loading'); if(l) l.textContent = "Can't reach the game yet. Check your signal, it'll load by itself."; }, 10000);
+  for(let attempt=0; ; attempt++){
+    try{
+      const r = await fetch(`${RELAY}/${TOPIC}/json?poll=1&since=all`);
+      if(!r.ok) throw new Error(r.status);
+      (await r.text()).split('\n').filter(Boolean).forEach(l => { try{ onRaw(JSON.parse(l)); }catch(e){} });
+      break;
+    }catch(e){ await new Promise(r=>setTimeout(r, 3000)); }
+  }
+  clearTimeout(timer); loaded = true; sync();
+  listen();
+})();
+function listen(){
+  const es = new EventSource(`${RELAY}/${TOPIC}/sse?since=${lastMsgId || 'all'}`);
+  es.onmessage = e => { try{ onRaw(JSON.parse(e.data)); sync(); }catch(err){} };
+  es.onerror = () => { if(es.readyState === EventSource.CLOSED){ setTimeout(listen, 3000); } };
+}
+// when a phone wakes up, catch up on anything missed
+document.addEventListener('visibilitychange', async () => {
+  if(document.visibilityState !== 'visible' || !loaded) return;
+  try{
+    const r = await fetch(`${RELAY}/${TOPIC}/json?poll=1&since=${lastMsgId || 'all'}`);
+    (await r.text()).split('\n').filter(Boolean).forEach(l => { try{ onRaw(JSON.parse(l)); }catch(e){} });
+    sync();
+  }catch(e){}
+});
+function renderReadOnly(){}
+
+/* ---------- stage machine ---------- */
+function stageOf(){
+  const m = mine();
+  if(!m) return 'join';
+  if(Array.isArray(m.board)) return 'board';
+  if(editing || (m.things||[]).length < 5) return 'things';
+  return 'generate';
+}
+function refresh(){
+  const s = stageOf();
+  if(s !== stage){ stage = s; renderMain(); }
+  else updateMain();
+  renderSide();
+}
+function shell(inner){
+  $('#app').innerHTML = `<h1>Friends <span>Bingo</span></h1><div id="winbar"></div><div id="ro"></div>${inner}<div id="side"></div>${isOwner?'<div id="host"></div>':''}`;
+  if(readOnly) renderReadOnly();
+}
+
+/* ---------- JOIN ---------- */
+function renderMain(){
+  if(stage === 'join'){
+    shell(`<p class="muted">Write 5 things people in the group will do tonight, then get your bingo board. First to finish a row or diagonal wins.</p>
+      <div class="card"><h3>What's your name?</h3>
+        <input type="text" id="name" placeholder="Your name" maxlength="30" autocomplete="off">
+        <button class="btn" id="join">Next</button><div id="msg"></div></div>`);
+    $('#join').onclick = join;
+    $('#name').onkeydown = e => { if(e.key === 'Enter') join(); };
+  }
+  else if(stage === 'things') renderThings();
+  else if(stage === 'generate') renderGenerate();
+  else if(stage === 'board') renderBoard();
+}
+function join(){
+  const name = $('#name').value.trim();
+  if(!name){ $('#msg').innerHTML = `<p class="err">Type your name first.</p>`; return; }
+  const existing = players.find(p => lc(p.name) === lc(name) && !p.guest);
+  if(existing){
+    $('#msg').innerHTML = `<p class="err">${esc(existing.name)} has already joined. Is that you on another phone?</p><button class="btn ghost" id="rejoin">Yes, that's me</button>`;
+    $('#rejoin').onclick = () => { me = existing.id; try{ localStorage.setItem('fb_me', me); }catch(e){} stage = null; sync(); };
+    return;
+  }
+  up(me, { name, things:[], board:null, marks:[], bingoAt:null, at:Date.now() });
+}
+
+/* ---------- THINGS ---------- */
+function whoOptions(selected){
+  const m = mine();
+  const names = players.filter(p => p.id !== me).map(p => p.name).sort((a,b)=>a.localeCompare(b));
+  if(selected && selected !== SOMEONE && !names.some(n => lc(n) === lc(selected))) names.push(selected);
+  return `<option value="">Who?</option>` +
+    names.map(n => `<option value="${esc(n)}" ${lc(n)===lc(selected)?'selected':''}>${esc(n)}</option>`).join('') +
+    `<option value="${SOMEONE}" ${selected===SOMEONE?'selected':''}>Someone (anyone)</option>
+     <option value="${OTHER}">Someone not on the list…</option>`;
+}
+function renderThings(){
+  const m = mine(); const things = (m.things || []).slice();
+  while(things.length < 5) things.push({ who:'', what:'' });
+  const eg = ['buys a round','falls asleep','mentions their ex','orders chips at 2am','loses their phone'];
+  shell(`<p class="muted">Hi ${esc(m.name)}! Pick a person and what they'll do. Things about you won't be on your board.</p>
+    <div class="card"><h3>Your 5 things</h3>
+      ${things.map((t,i)=>`<div class="thing" data-i="${i}"><span class="lbl">Thing ${i+1}</span>
+        <select class="who">${whoOptions(t.who)}</select>
+        <input type="text" class="other hidden" placeholder="Their name" maxlength="30">
+        <input type="text" class="what" placeholder="e.g. ${eg[i]}" value="${esc(t.what)}" maxlength="80"></div>`).join('')}
+      <p class="muted" style="margin-top:10px">Friends not on the list yet? They show up here as soon as they join.</p>
+      <button class="btn" id="save">Save my 5 things</button><div id="msg"></div></div>`);
+  document.querySelectorAll('.thing[data-i]').forEach(el => {
+    const sel = $('.who', el), other = $('.other', el);
+    sel.onchange = () => { other.classList.toggle('hidden', sel.value !== OTHER); if(sel.value === OTHER) other.focus(); };
+  });
+  $('#save').onclick = saveThings;
+}
+function readThings(){
+  return [...document.querySelectorAll('.thing[data-i]')].map(el => {
+    const sel = $('.who', el).value;
+    const who = sel === OTHER ? $('.other', el).value.trim() : sel;
+    return { who, what: $('.what', el).value.trim().replace(/^[A-Z]/, c => sel ? c.toLowerCase() : c) };
+  });
+}
+function saveThings(){
+  const things = readThings(); const m = mine();
+  const bad = things.findIndex(t => !t.who || !t.what);
+  if(bad > -1){ $('#msg').innerHTML = `<p class="err">Thing ${bad+1} needs a person and what they'll do.</p>`; return; }
+  editing = false;
+  up(me, { things });
+  if(stageOf() !== stage) refresh(); // optimistic
+}
+
+/* ---------- GENERATE ---------- */
+function poolFor(name){
+  const seen = new Set(), out = [];
+  players.forEach(p => (p.things||[]).forEach(t => {
+    if(lc(t.who) === lc(name)) return;          // nothing about you on your board
+    const s = thingText(t), k = lc(s);
+    if(!seen.has(k)){ seen.add(k); out.push(s); }
+  }));
+  return out;
+}
+function deal(name){
+  const pool = poolFor(name);
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  return pool.slice(0,9);
+}
+function renderGenerate(){
+  const m = mine();
+  shell(`<div class="card"><h3>Your things are in ✅</h3>
+      <ul class="summary">${m.things.map(t=>`<li>${esc(thingText(t))}</li>`).join('')}</ul>
+      <button class="btn ghost small" id="edit" style="margin-top:8px">Edit</button></div>
+    <div class="card"><h3>Ready for your board?</h3>
+      <p class="muted" id="poolmsg"></p>
+      <button class="btn" id="gen">🎲 Generate my board</button></div>`);
+  $('#edit').onclick = () => { editing = true; refresh(); };
+  $('#gen').onclick = () => {
+    const board = deal(m.name);
+    if(board.length < 9) return;
+    $('#gen').disabled = true;
+    up(me, { board, marks:[], bingoAt:null });
+  };
+  updateMain();
+}
+
+/* ---------- BOARD ---------- */
+function renderBoard(){
+  const m = mine();
+  shell(`<div class="player-head" style="margin-top:6px"><h2 style="margin:0">${esc(m.name)}'s board</h2><span class="pill" id="prog"></span></div>
+    <p class="muted" style="margin-top:8px">Tap a square when it happens. Tap again to undo.</p>
+    <div class="grid">${m.board.map((t,k)=>`<div class="cell" data-k="${k}">${esc(t)}</div>`).join('')}</div>
+    <div class="banner" id="banner"><h2>BINGO!</h2><p style="margin:6px 0 0;font-weight:600">Everyone in the game can see you won 🏆</p></div>`);
+  document.querySelectorAll('.cell').forEach(c => c.onclick = () => toggle(+c.dataset.k));
+  updateMain();
+}
+let localMarks = null, celebrated = null;
+function toggle(k){
+  const m = mine(); if(readOnly) return;
+  const marks = new Set(localMarks || m.marks || []);
+  marks.has(k) ? marks.delete(k) : marks.add(k);
+  localMarks = [...marks].sort();
+  const won = LINES.some(l => l.every(x => marks.has(x)));
+  const bingoAt = won ? (m.bingoAt || Date.now()) : null;
+  updateMain();
+  upMarks({ marks:localMarks.slice(), bingoAt }); localMarks = null;
+}
+
+/* ---------- live updates inside the current stage ---------- */
+function updateMain(){
+  const m = mine();
+  if(stage === 'things'){
+    document.querySelectorAll('.thing[data-i]').forEach(el => {
+      const sel = $('.who', el); if(sel.value === OTHER) return;
+      const v = sel.value; sel.innerHTML = whoOptions(v); sel.value = v;
+    });
+  }
+  if(stage === 'generate'){
+    const n = poolFor(m.name).length;
+    $('#poolmsg').innerHTML = n >= 9
+      ? `${n} things to pick from (none about you).`
+      : `Waiting for more people: need 9 things that aren't about you, there are ${n} so far. This updates by itself.`;
+    $('#gen').disabled = n < 9; $('#gen').style.opacity = n < 9 ? .5 : 1;
+  }
+  if(stage === 'board'){
+    const marks = new Set(localMarks || m.marks || []);
+    const wins = LINES.filter(l => l.every(k => marks.has(k))); const wc = new Set(wins.flat());
+    document.querySelectorAll('.cell').forEach((c,k) => { c.classList.toggle('on', marks.has(k)); c.classList.toggle('win', wc.has(k)); });
+    $('#prog').textContent = `${marks.size}/9`;
+    $('#banner').classList.toggle('show', wins.length > 0);
+    if(wins.length && !celebrated){ celebrated = true; confetti(); try{ navigator.vibrate && navigator.vibrate([80,40,80]); }catch(e){} }
+    if(!wins.length) celebrated = false;
+  }
+}
+
+/* ---------- who's playing + winners ---------- */
+function status(p){
+  if(Array.isArray(p.board)) return hasBingo(p) ? '🏆 BINGO' : `${(p.marks||[]).length}/9 ticked`;
+  const n = (p.things||[]).length;
+  return n < 5 ? 'writing things…' : 'ready';
+}
+function renderSide(){
+  const winners = players.filter(p => hasBingo(p) && p.bingoAt).sort((a,b)=>a.bingoAt-b.bingoAt);
+  const wb = $('#winbar');
+  if(wb){
+    const was = wb.dataset.first;
+    wb.innerHTML = winners.length ? `<div class="winner">🏆 ${esc(winners[0].name)} got BINGO first!${winners.length>1?` <span style="font-weight:500">(then ${winners.slice(1).map(p=>esc(p.name)).join(', ')})</span>`:''}</div>` : '';
+    if(winners.length && was && was !== winners[0].id) {}
+    if(winners.length && !was && winners[0].id !== me && stage !== 'join') confetti();
+    wb.dataset.first = winners.length ? winners[0].id : '';
+  }
+  const side = $('#side'); if(!side) return;
+  if(!players.length){ side.innerHTML = ''; return; }
+  const sorted = players.slice().sort((a,b)=>(a.at||0)-(b.at||0));
+  side.innerHTML = `<div class="card"><h3>Who's playing (${players.length})</h3>
+    <ul class="plist">${sorted.map(p=>`<li><span>${esc(p.name)}${p.id===me?' <span class="muted">(you)</span>':''}</span><span class="st">${status(p)}</span></li>`).join('')}</ul></div>`;
+  renderHost();
+}
+
+/* ---------- host tools (owner only) ---------- */
+let hostOpen = false;
+function renderHost(){
+  const h = $('#host'); if(!h) return;
+  if(h.dataset.built){ return; }
+  h.dataset.built = '1';
+  h.innerHTML = `<div class="card"><h3>Host tools</h3>
+    <p class="muted">Only you see this.</p>
+    <button class="btn ghost" id="addGuest">Add things for a friend without a phone</button>
+    <div id="guestForm" class="hidden">
+      <input type="text" id="gName" placeholder="Friend's name" maxlength="30">
+      ${[0,1,2,3,4].map(i=>`<div class="thing" data-g="${i}"><span class="lbl">Thing ${i+1}</span>
+        <input type="text" class="gwho" placeholder="Who (name or Someone)"><input type="text" class="gwhat" placeholder="What they'll do"></div>`).join('')}
+      <button class="btn" id="gSave">Add friend</button><div id="gMsg"></div>
+    </div>
+    <button class="btn ghost" id="guestBoards">Copy boards for friends added here</button>
+    <button class="btn danger" id="reset" style="margin-top:18px">Reset the whole game</button></div>`;
+  $('#addGuest').onclick = () => $('#guestForm').classList.toggle('hidden');
+  $('#gSave').onclick = () => {
+    const name = $('#gName').value.trim();
+    const things = [...document.querySelectorAll('[data-g]')].map(el => ({ who:$('.gwho',el).value.trim(), what:$('.gwhat',el).value.trim() }));
+    if(!name || things.some(t=>!t.who||!t.what)){ $('#gMsg').innerHTML = `<p class="err">Fill in the name and all 5 things.</p>`; return; }
+    if(players.some(p => lc(p.name) === lc(name))){ $('#gMsg').innerHTML = `<p class="err">That name's taken.</p>`; return; }
+    const id = 'guest-' + Math.random().toString(36).slice(2,9);
+    up(id, { name, things, board:null, marks:[], at:Date.now(), guest:true });
+    $('#gMsg').innerHTML = `<p class="ok">Added ${esc(name)}.</p>`; $('#gName').value=''; document.querySelectorAll('.gwho,.gwhat').forEach(i=>i.value='');
+  };
+  $('#guestBoards').onclick = async () => {
+    const guests = players.filter(p => p.guest);
+    if(!guests.length){ toast('No friends added here yet'); return; }
+    for(const g of guests){
+      if(!Array.isArray(g.board)){
+        const board = deal(g.name);
+        if(board.length < 9){ toast(`Not enough things yet for ${g.name}'s board`); return; }
+        g.board = board;
+        up(g.id, { board });
+      }
+    }
+    copy(guests.map(g => `🎯 ${g.name}'s bingo board\n` + g.board.map((t,i)=>`${i+1}. ${t}`).join('\n') + `\n[1][2][3]\n[4][5][6]\n[7][8][9]`).join('\n\n'));
+  };
+  $('#reset').onclick = () => {
+    const b = $('#reset');
+    if(!b.dataset.armed){ b.dataset.armed='1'; b.textContent='Tap again to delete everything'; setTimeout(()=>{ if(b.isConnected){ delete b.dataset.armed; b.textContent='Reset the whole game'; } },3000); return; }
+    send({ t:'reset' });
+    toast('Game reset');
+  };
+}
+
+/* ---------- confetti ---------- */
+function confetti(){
+  const cv = $('#confetti'), cx = cv.getContext('2d');
+  cv.width = innerWidth; cv.height = innerHeight;
+  const cols = ['#ffcf3f','#ff5d8f','#3ee08f','#7cc4ff','#ffffff'];
+  const ps = Array.from({length:140}, () => ({ x:Math.random()*cv.width, y:-20-Math.random()*cv.height*.5, vx:(Math.random()-.5)*3,
+    vy:2+Math.random()*4, s:5+Math.random()*6, r:Math.random()*6, vr:(Math.random()-.5)*.3, c:cols[Math.floor(Math.random()*cols.length)] }));
+  let f = 0;
+  (function tick(){
+    cx.clearRect(0,0,cv.width,cv.height);
+    ps.forEach(p => { p.x+=p.vx; p.y+=p.vy; p.vy+=.04; p.r+=p.vr; cx.save(); cx.translate(p.x,p.y); cx.rotate(p.r); cx.fillStyle=p.c; cx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2); cx.restore(); });
+    if(++f < 220) requestAnimationFrame(tick); else cx.clearRect(0,0,cv.width,cv.height);
+  })();
+}
+</script>
+</body>
+</html>
